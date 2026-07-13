@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.analytics import quality_report
 from app.auth import require_operator
 from app.database import get_db
-from app.models import AdvisorDecision, Proposal, RiskProfileRecord
+from app.models import AdvisorDecision, Client, Proposal, RiskProfileRecord
 from app.schemas import DecisionIn
 from app.workflows.asesoria_workflow import resume_advisory
 
@@ -39,6 +39,7 @@ def history(db: Session = Depends(get_db)):
     resultado = []
     for r in registros:
         proposal = db.get(Proposal, r.proposal_id) if r.proposal_id else None
+        cliente = db.get(Client, r.client_id)
         decision = (
             db.query(AdvisorDecision)
             .filter_by(proposal_id=r.proposal_id)
@@ -50,6 +51,7 @@ def history(db: Session = Depends(get_db)):
         resultado.append(
             {
                 "client_id": r.client_id,
+                "cliente_nombre": cliente.nombre if cliente else "",
                 "perfil": {
                     "score": r.score,
                     "perfil": r.perfil,
@@ -60,9 +62,11 @@ def history(db: Session = Depends(get_db)):
                 },
                 "propuesta": {
                     "proposal_id": proposal.id if proposal else None,
+                    "confianza": proposal.confianza if proposal else None,
                     "distribucion": proposal.distribucion if proposal else None,
                     "proyeccion": proposal.proyeccion if proposal else None,
                     "explicacion": proposal.explicacion if proposal else None,
+                    "created_at": proposal.created_at.isoformat() if proposal and proposal.created_at else None,
                 }
                 if proposal
                 else None,

@@ -18,6 +18,7 @@ import {
   getQualityReport,
   getRanking,
   login,
+  normalizarDistribucion,
   sendDecision,
   setAutopilot,
   setPilotMode,
@@ -78,13 +79,18 @@ export default function AsesorPage() {
 
   if (!token) {
     return (
-      <div className="max-w-sm mx-auto card-premium p-6 mt-16">
-        <h1 className="font-bold text-brand-900 text-lg mb-4">Panel Operativo</h1>
+      <div className="max-w-sm mx-auto card-premium p-7 mt-16">
+        <div className="flex items-center gap-2.5 mb-5">
+          <span className="h-9 w-9 rounded-xl bg-gradient-to-br from-brand-600 to-accent flex items-center justify-center text-white text-base">
+            🔐
+          </span>
+          <h1 className="font-extrabold text-brand-900 text-lg">Panel Operativo</h1>
+        </div>
         <input
           placeholder="Usuario"
           value={usuario}
           onChange={(e) => setUsuario(e.target.value)}
-          className="w-full rounded-xl border border-brand-100 px-3 py-2 text-sm mb-2"
+          className="w-full rounded-xl border border-brand-100 bg-white/70 px-3 py-2.5 text-sm mb-2.5"
         />
         <input
           placeholder="Clave"
@@ -92,7 +98,7 @@ export default function AsesorPage() {
           value={clave}
           onChange={(e) => setClave(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-          className="w-full rounded-xl border border-brand-100 px-3 py-2 text-sm mb-3"
+          className="w-full rounded-xl border border-brand-100 bg-white/70 px-3 py-2.5 text-sm mb-3"
         />
         {errorLogin && <p className="text-xs text-red-600 mb-2">{errorLogin}</p>}
         <button onClick={handleLogin} className="btn-primary w-full">Entrar</button>
@@ -100,24 +106,50 @@ export default function AsesorPage() {
     );
   }
 
+  const pendientes = historia.filter((h) => h.revision.estado === "pendiente").length;
+
   const tabs: { id: Tab; label: string }[] = [
-    { id: "historia", label: "📋 Historias" },
+    { id: "historia", label: `⏸ Revisión (${pendientes})` },
+    { id: "ranking", label: "📊 Ranking clientes" },
     { id: "calidad", label: "📐 Calidad" },
     { id: "autopiloto", label: "🤖 Autopiloto" },
     { id: "piloto", label: "🧪 Modo Piloto" },
-    { id: "ranking", label: "📊 Ranking" },
     { id: "auditoria", label: "🔒 Auditoría" },
   ];
 
+  const ESTADO_ESTILO: Record<string, string> = {
+    pendiente: "bg-amber-100 text-amber-700",
+    aprobada: "bg-success-400/20 text-success-600",
+    rechazada: "bg-red-100 text-red-600",
+    editada: "bg-accent/15 text-accent",
+  };
+
   return (
     <div className="space-y-6">
+      {/* ## Encabezado del panel */}
+      <header>
+        <div className="flex items-center gap-2.5">
+          <span className="h-10 w-10 rounded-xl bg-gradient-to-br from-brand-600 to-accent flex items-center justify-center text-white text-lg shrink-0">
+            🧑‍💼
+          </span>
+          <div>
+            <h1 className="text-2xl font-extrabold text-brand-900 tracking-tight">Panel Operativo</h1>
+            <p className="text-sm text-slate-500">
+              Gestión manual: nada avanza ni se prioriza sin criterio humano.
+            </p>
+          </div>
+        </div>
+      </header>
+
       <div className="flex flex-wrap gap-2">
         {tabs.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`text-sm font-semibold px-3.5 py-1.5 rounded-pill border ${
-              tab === t.id ? "bg-brand-600 text-white border-brand-600" : "border-brand-100 text-brand-700"
+            className={`text-sm font-semibold px-3.5 py-1.5 rounded-pill border transition-all ${
+              tab === t.id
+                ? "bg-gradient-to-b from-brand-500 to-brand-700 text-white border-brand-600 shadow-lift"
+                : "border-white/70 bg-white/50 backdrop-blur-md text-brand-700 hover:-translate-y-0.5"
             }`}
           >
             {t.label}
@@ -126,47 +158,105 @@ export default function AsesorPage() {
       </div>
 
       {tab === "historia" && (
-        <div className="space-y-4">
-          {historia.map((h) => (
-            <details key={h.propuesta?.proposal_id ?? h.client_id} className="card-premium p-5">
-              <summary className="cursor-pointer font-semibold text-brand-900">
-                Cliente #{h.client_id} — perfil {h.perfil.perfil} — {h.revision.estado}
-                {h.perfil.es_muestra_piloto && <span className="ml-2 text-xs text-brand-500">(piloto)</span>}
-              </summary>
-              <div className="mt-3 space-y-3 text-sm">
-                <div>
-                  <p className="font-bold text-brand-700">Historia 1 — Perfil transparente</p>
-                  <p className="text-slate-500">
-                    Score {h.perfil.score} · reglas {h.perfil.rules_version} · estratos:{" "}
-                    {Object.entries(h.perfil.estratos).map(([k, v]) => `${k}=${v}`).join(", ")}
-                  </p>
-                </div>
-                {h.propuesta && (
+        <div className="space-y-5">
+          <p className="text-xs text-slate-400 bg-white/50 backdrop-blur-sm border border-white/70 rounded-xl px-4 py-2.5">
+            📌 Cada caso muestra <b>Historia 1</b> (perfil transparente), <b>Historia 2</b> (propuesta
+            explicable) e <b>Historia 3</b> (revisión) — toda la información que necesitas para decidir,
+            en un solo lugar.
+          </p>
+
+          {historia.map((h, i) => {
+            const nombre = h.cliente_nombre?.trim() || `Cliente Demo ${h.client_id}`;
+            const fecha = h.propuesta?.created_at ? new Date(h.propuesta.created_at).toLocaleDateString("es-EC") : "";
+            const confianzaPct = h.propuesta ? Math.round(h.propuesta.confianza * 100) : null;
+            return (
+              <div key={h.propuesta?.proposal_id ?? h.client_id} className="card-premium p-6 animate-rise" style={{ animationDelay: `${i * 40}ms` }}>
+                {/* ## Encabezado del caso */}
+                <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
                   <div>
-                    <p className="font-bold text-brand-700">Historia 2 — Propuesta explicable</p>
-                    <p className="text-slate-500">{h.propuesta.explicacion}</p>
+                    <p className="font-extrabold text-brand-900">
+                      {nombre} {h.propuesta && <span className="text-slate-400 font-semibold">· propuesta #{h.propuesta.proposal_id}</span>}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-0.5 capitalize">
+                      Perfil {h.perfil.perfil} · Confianza {confianzaPct ?? "—"}% {fecha && `· ${fecha}`}
+                      {h.perfil.es_muestra_piloto && <span className="ml-1.5 text-brand-500">(piloto)</span>}
+                    </p>
+                  </div>
+                  <span className={`text-[11px] font-bold uppercase tracking-wide px-3 py-1.5 rounded-pill shrink-0 ${ESTADO_ESTILO[h.revision.estado] ?? "bg-slate-100 text-slate-500"}`}>
+                    {h.revision.estado === "pendiente" ? "Pendiente revisión" : h.revision.estado}
+                  </span>
+                </div>
+
+                {/* ## Historia 1 — Perfil financiero transparente */}
+                <div className="rounded-2xl bg-brand-50/70 border border-brand-100 p-4 mb-3">
+                  <p className="text-xs font-extrabold text-brand-700 uppercase tracking-wide mb-2">
+                    📋 Historia 1 — Perfil financiero transparente
+                  </p>
+                  <p className="text-sm font-bold text-brand-900 capitalize mb-2.5">
+                    {h.perfil.perfil} <span className="font-semibold text-slate-500">· Score: {h.perfil.score}</span>{" "}
+                    <span className="font-semibold text-slate-500">· Confianza: {confianzaPct ?? "—"}%</span>
+                  </p>
+                  <ul className="space-y-1.5 text-xs text-slate-600">
+                    {h.perfil.influencias.map((inf, idx) => (
+                      <li key={idx}>
+                        <span className="font-semibold text-brand-800">{inf.pregunta}</span>
+                        {" → "}
+                        <span className="font-semibold">{inf.respuesta}</span>
+                        {" "}
+                        <span className="text-brand-500">({inf.puntos} pts)</span>
+                        {" — "}
+                        {inf.explicacion}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* ## Historia 2 — Propuesta explicable */}
+                {h.propuesta && (
+                  <div className="rounded-2xl bg-white/60 border border-white/70 p-4 mb-3">
+                    <p className="text-xs font-extrabold text-brand-700 uppercase tracking-wide mb-2">
+                      📈 Historia 2 — Propuesta explicable
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 mb-2.5">
+                      {normalizarDistribucion(h.propuesta.distribucion).map((d) => (
+                        <span key={d.clase} className="text-[11px] font-semibold px-2.5 py-1 rounded-pill bg-brand-100 text-brand-700">
+                          {d.nombre}: {d.porcentaje}%
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-xs text-slate-600 leading-relaxed">{h.propuesta.explicacion}</p>
                   </div>
                 )}
-                <div>
-                  <p className="font-bold text-brand-700">Historia 3 — Revisión</p>
-                  <p className="text-slate-500">
-                    Estado: {h.revision.estado}
+
+                {/* ## Historia 3 — Revisión */}
+                <div className="rounded-2xl bg-white/40 border border-white/60 p-4">
+                  <p className="text-xs font-extrabold text-brand-700 uppercase tracking-wide mb-2">
+                    ⏸ Historia 3 — Revisión
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Estado: <b className="text-brand-900">{h.revision.estado}</b>
                     {h.revision.asesor && ` · asesor: ${h.revision.asesor}`}
                   </p>
                   {h.revision.estado === "pendiente" && h.propuesta && (
-                    <div className="flex gap-2 mt-2">
-                      <button onClick={() => decidir(h.propuesta!.proposal_id, "approve")} className="text-xs font-bold px-3 py-1.5 rounded-lg bg-success-400/20 text-success-500">
-                        Aprobar
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        onClick={() => decidir(h.propuesta!.proposal_id, "approve")}
+                        className="text-xs font-bold px-4 py-2 rounded-xl bg-success-400/20 text-success-600 hover:-translate-y-0.5 transition-transform"
+                      >
+                        ✓ Aprobar
                       </button>
-                      <button onClick={() => decidir(h.propuesta!.proposal_id, "reject")} className="text-xs font-bold px-3 py-1.5 rounded-lg bg-red-100 text-red-600">
-                        Rechazar
+                      <button
+                        onClick={() => decidir(h.propuesta!.proposal_id, "reject")}
+                        className="text-xs font-bold px-4 py-2 rounded-xl bg-red-100 text-red-600 hover:-translate-y-0.5 transition-transform"
+                      >
+                        ✕ Rechazar
                       </button>
                     </div>
                   )}
                 </div>
               </div>
-            </details>
-          ))}
+            );
+          })}
           {historia.length === 0 && <p className="text-slate-400 text-sm">Aún no hay propuestas.</p>}
         </div>
       )}

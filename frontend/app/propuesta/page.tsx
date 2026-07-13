@@ -26,7 +26,7 @@ import {
   YAxis,
 } from "recharts";
 import DisclaimerBanner from "@/components/DisclaimerBanner";
-import { MarkowitzResult, Proposal, getMarkowitz, getProposal } from "@/lib/api";
+import { MarkowitzResult, Proposal, getMarkowitz, getProposal, normalizarDistribucion } from "@/lib/api";
 
 const fmt = (n: number) => Math.round(n).toLocaleString("en-US");
 const COLORES = ["#5B18D9", "#8A2BE2", "#A855F7", "#C4B5FD", "#E9D5FF"];
@@ -89,7 +89,8 @@ function PropuestaContenido() {
   if (!propuesta) return <LoadingState />;
 
   const confianzaPct = Math.round(propuesta.confianza * 100);
-  const distribucionData = propuesta.distribucion.map((d) => ({ name: d.nombre, value: d.porcentaje }));
+  const distribucion = normalizarDistribucion(propuesta.distribucion);
+  const distribucionData = distribucion.map((d) => ({ name: d.nombre, value: d.porcentaje }));
   const riesgo = nivelRiesgo(propuesta.perfil);
   const ring = 2 * Math.PI * 42; // circunferencia del anillo de confianza (contenedor visual)
 
@@ -166,7 +167,7 @@ function PropuestaContenido() {
         <div className="card-premium p-4 text-center">
           <p className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">Diversificación</p>
           <p className="text-lg font-extrabold text-brand-900 mt-1">
-            {propuesta.distribucion.length}
+            {distribucion.length}
             <span className="text-xs font-semibold text-slate-400 ml-1">clases de activo</span>
           </p>
         </div>
@@ -191,7 +192,7 @@ function PropuestaContenido() {
         </ResponsiveContainer>
         {/* Cada activo en una tarjeta moderna (usa los mismos datos de distribución) */}
         <div className="grid sm:grid-cols-2 gap-3 mt-5">
-          {propuesta.distribucion.map((d, i) => (
+          {distribucion.map((d, i) => (
             <div
               key={d.nombre}
               className="flex items-center gap-3 rounded-2xl border border-brand-100 bg-white/60 backdrop-blur-md px-4 py-3 transition-all hover:-translate-y-0.5 hover:shadow-lift"
@@ -235,7 +236,7 @@ function PropuestaContenido() {
           <p className="text-xs text-slate-400 mb-3">{markowitz.nota}</p>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart
-              data={propuesta.distribucion.map((d) => ({
+              data={distribucion.map((d) => ({
                 clase: d.nombre,
                 Reglas: d.porcentaje,
                 Markowitz: markowitz.pesos[d.clase] ?? 0,

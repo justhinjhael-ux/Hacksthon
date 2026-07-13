@@ -20,7 +20,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link href="/" className="flex items-center gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/logo-mark.png" alt="Odds Ratio" className="h-9 w-auto" />
-              <span className="font-extrabold text-brand-900 tracking-tight">Odds Ratio</span>
+              <span>
+                <span className="block font-extrabold text-brand-900 tracking-tight leading-tight">Odds Ratio</span>
+                <span className="block text-[9px] font-bold text-brand-500 tracking-widest leading-tight">
+                  ANÁLISIS · ESTADÍSTICA · DECISIONES
+                </span>
+              </span>
             </Link>
             <nav className="flex items-center gap-5 text-sm font-semibold text-brand-700">
               <Link href="/onboarding" className="hover:text-brand-900">Crear perfil</Link>

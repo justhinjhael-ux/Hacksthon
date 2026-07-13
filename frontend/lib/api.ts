@@ -78,6 +78,13 @@ export interface AllocationItem {
   instrumentos: { ticker: string; nombre: string; tipo: string }[];
 }
 
+// ## Forma que toma `distribucion` en una propuesta EDITADA por el asesor:
+// ## el backend guarda el original + los % editados (ver AdvisorDecision).
+export interface DistribucionEditada {
+  original: AllocationItem[];
+  editada_por_asesor: Record<string, number>;
+}
+
 // ## Propuesta completa que devuelve el grafo LangGraph tras el interrupt
 export interface Proposal {
   proposal_id: number;
@@ -85,13 +92,24 @@ export interface Proposal {
   thread_id?: string;
   perfil: string;
   confianza: number;
-  distribucion: AllocationItem[];
+  distribucion: AllocationItem[] | DistribucionEditada;
   proyeccion: Proyeccion;
   explicacion: string;
   estado: string;
   guardrail_activado: boolean;
   alerta_cumplimiento?: { ok: boolean; alertas: any[] };
   autopilot_aplicado?: boolean;
+}
+
+// ## Normaliza `distribucion` a una lista siempre — si la propuesta fue
+// ## editada por el asesor, usa los % editados sobre los mismos activos
+// ## originales (nombre/riesgo/instrumentos no cambian, solo el %).
+export function normalizarDistribucion(distribucion: AllocationItem[] | DistribucionEditada): AllocationItem[] {
+  if (Array.isArray(distribucion)) return distribucion;
+  return distribucion.original.map((item) => ({
+    ...item,
+    porcentaje: distribucion.editada_por_asesor[item.clase] ?? item.porcentaje,
+  }));
 }
 
 export interface MarkowitzResult {
@@ -107,6 +125,7 @@ export interface MarkowitzResult {
 
 export interface HistoryItem {
   client_id: number;
+  cliente_nombre: string;
   perfil: {
     score: number;
     perfil: string;
@@ -117,9 +136,11 @@ export interface HistoryItem {
   };
   propuesta: {
     proposal_id: number;
-    distribucion: AllocationItem[];
+    confianza: number;
+    distribucion: AllocationItem[] | DistribucionEditada;
     proyeccion: Proyeccion;
     explicacion: string;
+    created_at: string | null;
   } | null;
   revision: {
     estado: string;
