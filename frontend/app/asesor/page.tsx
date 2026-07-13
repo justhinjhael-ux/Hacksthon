@@ -325,7 +325,12 @@ export default function AsesorPage() {
                     <p className="text-xs text-slate-600 line-clamp-2 mb-3">
                       {h.propuesta?.explicacion || "Sin propuesta explicable disponible."}
                     </p>
-                    <span className="text-xs font-bold text-brand-600">Ver propuesta →</span>
+                    {h.propuesta?.autopilot?.recomendado && h.revision.estado === "pendiente" && (
+                      <span className="inline-block text-[10px] font-bold px-2 py-1 rounded-pill bg-brand-100 text-brand-700 mb-2">
+                        🤖 Recomendado para revisión rápida
+                      </span>
+                    )}
+                    <span className="text-xs font-bold text-brand-600 block">Ver propuesta →</span>
                   </button>
                 );
               })}
@@ -389,6 +394,20 @@ export default function AsesorPage() {
                   {h.propuesta?.explicacion || "Sin explicación disponible."}
                 </p>
               </div>
+
+              {/* ## Recomendación del Autopiloto — solo informativa */}
+              {h.propuesta?.autopilot && h.revision.estado === "pendiente" && (
+                <div
+                  className={`text-sm rounded-2xl px-4 py-3 border ${
+                    h.propuesta.autopilot.recomendado
+                      ? "bg-brand-50 border-brand-200 text-brand-800"
+                      : "bg-slate-50 border-slate-200 text-slate-500"
+                  }`}
+                >
+                  🤖 <b>{h.propuesta.autopilot.recomendado ? "Recomendación del Autopiloto:" : "Autopiloto:"}</b>{" "}
+                  {h.propuesta.autopilot.motivo} La decisión final es tuya.
+                </div>
+              )}
 
               {/* ## Botones grandes de decisión */}
               {h.revision.estado === "pendiente" && h.propuesta && (
@@ -615,29 +634,40 @@ export default function AsesorPage() {
           </div>
         )}
 
-        {/* ## ================= AUTOPILOTO ================= */}
+        {/* ## ================= AUTOPILOTO (solo RECOMIENDA, nunca aprueba) ================= */}
         {vista === "autopiloto" && autopilotCfg && (
-          <div className="card-premium p-5 max-w-md">
-            <label className="flex items-center gap-2 text-sm font-semibold">
-              <input
-                type="checkbox"
-                checked={autopilotCfg.enabled}
-                onChange={(e) => setAutopilot(token, { ...autopilotCfg, enabled: e.target.checked }).then(() => recargar(token))}
-              />
-              Activar Modo Autopiloto
-            </label>
-            <label className="block mt-3 text-sm">
-              Umbral de confianza: {autopilotCfg.umbral}
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={autopilotCfg.umbral}
-                onChange={(e) => setAutopilot(token, { ...autopilotCfg, umbral: Number(e.target.value) }).then(() => recargar(token))}
-                className="w-full"
-              />
-            </label>
+          <div className="space-y-4">
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 max-w-xl">
+              ⚠️ Requisito del track: el Autopiloto <b>nunca aprueba, edita ni rechaza</b> nada por sí
+              solo. Solo marca qué propuestas son candidatas a revisión rápida — la decisión final
+              siempre la toma un asesor humano haciendo clic en Aprobar, Editar o Rechazar.
+            </p>
+            <div className="card-premium p-5 max-w-md">
+              <label className="flex items-center gap-2 text-sm font-semibold">
+                <input
+                  type="checkbox"
+                  checked={autopilotCfg.enabled}
+                  onChange={(e) => setAutopilot(token, { ...autopilotCfg, enabled: e.target.checked }).then(() => recargar(token))}
+                />
+                Activar recomendaciones automáticas
+              </label>
+              <label className="block mt-3 text-sm">
+                Umbral de confianza para recomendar: {autopilotCfg.umbral}
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={autopilotCfg.umbral}
+                  onChange={(e) => setAutopilot(token, { ...autopilotCfg, umbral: Number(e.target.value) }).then(() => recargar(token))}
+                  className="w-full"
+                />
+              </label>
+              <p className="text-xs text-slate-400 mt-3">
+                Cuando la confianza bayesiana de una propuesta supere este umbral y no haya alertas de
+                Cumplimiento, aparecerá marcada como "recomendada" en el Dashboard — solo eso.
+              </p>
+            </div>
           </div>
         )}
 

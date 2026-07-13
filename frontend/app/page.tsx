@@ -4,6 +4,7 @@
 // ## ==========================================================================
 import Link from "next/link"; // ## navegación interna sin recargar
 import RoiCalculator from "@/components/RoiCalculator"; // ## calculadora para CEOs
+import { asset } from "@/lib/assetPath";
 
 // ## Tarjeta de pilar técnico con hover elevado
 function Pilar({ icono, titulo, texto }: { icono: string; titulo: string; texto: string }) {
@@ -93,7 +94,7 @@ export default function Home() {
               className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 font-semibold pl-2.5 pr-6 py-2 rounded-xl hover:bg-white/20 active:scale-95 transition-all duration-200 ease-ios"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/orai-avatar.png" alt="ORAI" className="w-9 h-9 rounded-full object-cover border border-white/40" />
+              <img src={asset("/orai-avatar.png")} alt="ORAI" className="w-9 h-9 rounded-full object-cover border border-white/40" />
               Hablar con ORAI
             </Link>
           </div>

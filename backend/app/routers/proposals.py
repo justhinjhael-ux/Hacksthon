@@ -27,6 +27,7 @@ def _serialize(db: Session, p: Proposal) -> dict:
         "guardrail_activado": p.guardrail_activado,
         "llm_provider": p.llm_provider,
         "alerta_cumplimiento": p.alerta_cumplimiento,
+        "autopilot": p.autopilot,
         "score": registro.score if registro else None,
         "influencias": registro.detalle.get("influencias", []) if registro else [],
         "created_at": p.created_at.isoformat() if p.created_at else None,

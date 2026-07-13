@@ -66,6 +66,7 @@ def history(db: Session = Depends(get_db)):
                     "distribucion": proposal.distribucion if proposal else None,
                     "proyeccion": proposal.proyeccion if proposal else None,
                     "explicacion": proposal.explicacion if proposal else None,
+                    "autopilot": proposal.autopilot if proposal else None,
                     "created_at": proposal.created_at.isoformat() if proposal and proposal.created_at else None,
                 }
                 if proposal

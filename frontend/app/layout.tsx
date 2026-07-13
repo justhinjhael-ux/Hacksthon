@@ -4,6 +4,7 @@
 // ## ==========================================================================
 import type { Metadata } from "next";
 import Link from "next/link";
+import { asset } from "@/lib/assetPath";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -19,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo-mark.png" alt="Odds Ratio" className="h-9 w-auto" />
+              <img src={asset("/logo-mark.png")} alt="Odds Ratio" className="h-9 w-auto" />
               <span>
                 <span className="block font-extrabold text-brand-900 tracking-tight leading-tight">Odds Ratio</span>
                 <span className="block text-[9px] font-bold text-brand-500 tracking-widest leading-tight">

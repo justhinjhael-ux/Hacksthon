@@ -74,12 +74,13 @@ def start_advisory(
     db.add(registro)
     db.commit()
 
-    # Autopiloto: intenta auto-aprobar si la confianza/umbral/Cumplimiento lo permiten
+    # Autopiloto: SOLO calcula si el caso califica para una recomendación de
+    # aprobación rápida — nunca decide ni cambia el estado (regla del track:
+    # toda acción sensible requiere aprobación de un asesor humano).
     from app.workflows import autopilot  # import tardío evita ciclos
 
-    auto = autopilot.maybe_auto_approve(db, proposal)
-    if auto is not None:
-        db.refresh(proposal)
+    recomendacion = autopilot.evaluar_recomendacion(db, proposal)
+    db.commit()
 
     return {
         "proposal_id": proposal.id,
@@ -93,7 +94,7 @@ def start_advisory(
         "estado": proposal.estado,
         "guardrail_activado": proposal.guardrail_activado,
         "alerta_cumplimiento": proposal.alerta_cumplimiento,
-        "autopilot_aplicado": auto is not None,
+        "autopilot": recomendacion,
     }
 
 

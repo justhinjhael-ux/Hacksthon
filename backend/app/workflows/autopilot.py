@@ -1,11 +1,15 @@
-"""MODO AUTOPILOTO — autonomía por excepción (`autopilot-v1`).
+"""AUTOPILOTO — motor de RECOMENDACIÓN (`autopilot-v1`), nunca de ejecución.
 
-El sistema se GANA la autonomía estadísticamente: apagado por defecto (opt-in
-del operador). Cuando la confianza bayesiana (posterior Beta-Binomial) de un
-cliente supera el umbral configurado y NO hay alertas de Cumplimiento, el
-Autopiloto aprueba solo — firmando la auditoría como "ODDS-Autopilot v1" con
-el umbral y la confianza usados. Los casos de excepción siguen yendo al
-humano. Nunca ejecuta órdenes reales; configurable por jurisdicción.
+REGLA DEL TRACK (obligatoria, no negociable): toda acción sensible queda como
+propuesta sujeta a aprobación de un asesor humano. Por eso el Autopiloto
+JAMÁS cambia el estado de una propuesta ni llama a resume_advisory() — solo
+calcula si el caso CALIFICA para una recomendación (confianza bayesiana >=
+umbral configurado y sin alertas de Cumplimiento) y deja esa recomendación
+visible para el asesor en el Panel Operativo. La propuesta permanece
+"pendiente" hasta que un humano hace clic en Aprobar, Editar o Rechazar.
+
+Es soporte técnico y de priorización (qué casos son rutinarios y cuáles
+requieren más atención) — nunca un sustituto de la decisión humana.
 """
 from sqlalchemy.orm import Session
 
@@ -14,7 +18,6 @@ from app.models import Proposal, SystemSetting
 AUTOPILOT_VERSION = "autopilot-v1"
 SETTING_KEY = "autopilot"
 DEFAULT_CONFIG = {"enabled": False, "umbral": 0.75}
-ASESOR_AUTOPILOT = "ODDS-Autopilot v1"
 
 
 def get_config(db: Session) -> dict:
@@ -38,48 +41,49 @@ def set_config(db: Session, enabled: bool, umbral: float) -> dict:
     return valor
 
 
-def maybe_auto_approve(db: Session, proposal: Proposal) -> dict | None:
-    """Si el Autopiloto está activado, la confianza supera el umbral y no hay
-    alertas de Cumplimiento, aprueba la propuesta automáticamente.
-
-    Devuelve el resultado de resume_advisory() si auto-aprobó, o None si el
-    caso sigue esperando revisión humana.
+def evaluar_recomendacion(db: Session, proposal: Proposal) -> dict:
+    """Calcula si esta propuesta CALIFICA para una recomendación de aprobación
+    rápida — NO aprueba nada. Guarda el resultado en Proposal.autopilot (solo
+    metadata informativa) y lo devuelve para mostrarlo en la UI del asesor.
     """
     config = get_config(db)
-    if not config["enabled"]:
-        return None
-    if proposal.confianza < config["umbral"]:
-        return None
     alertas = (proposal.alerta_cumplimiento or {}).get("alertas", [])
-    if alertas:
-        return None  # una alerta de Cumplimiento revoca la autonomía
 
-    from app.workflows.asesoria_workflow import resume_advisory  # evita ciclo
+    if not config["enabled"]:
+        resultado = {"recomendado": False, "motivo": "Autopiloto desactivado por el operador."}
+    elif alertas:
+        resultado = {"recomendado": False, "motivo": "Hay alertas de Cumplimiento: requiere revisión humana prioritaria."}
+    elif proposal.confianza < config["umbral"]:
+        resultado = {
+            "recomendado": False,
+            "motivo": f"Confianza {proposal.confianza:.0%} por debajo del umbral ({config['umbral']:.0%}).",
+        }
+    else:
+        resultado = {
+            "recomendado": True,
+            "motivo": (
+                f"Confianza {proposal.confianza:.0%} >= umbral {config['umbral']:.0%} y sin alertas de "
+                "Cumplimiento — el sistema sugiere que es un caso rutinario, apto para aprobación rápida."
+            ),
+        }
 
-    decision = {
-        "decision": "approve",
-        "asesor": ASESOR_AUTOPILOT,
-        "comentario": (
-            f"Auto-aprobado: confianza {proposal.confianza:.2%} >= umbral "
-            f"{config['umbral']:.2%}, sin alertas de Cumplimiento."
-        ),
-    }
-    resultado = resume_advisory(db, proposal, decision)
-    resultado["autopilot"] = True
+    resultado["umbral"] = config["umbral"]
+    resultado["confianza"] = proposal.confianza
+    resultado["version"] = AUTOPILOT_VERSION
+    proposal.autopilot = resultado
+    db.flush()
     return resultado
 
 
 def stats(db: Session) -> dict:
-    from app.models import AdvisorDecision  # import tardío evita ciclos
-
     config = get_config(db)
-    total_propuestas = db.query(Proposal).count()
-    aprobadas_auto = (
-        db.query(AdvisorDecision).filter_by(asesor=ASESOR_AUTOPILOT).count()
+    propuestas = db.query(Proposal).all()
+    recomendadas_pendientes = sum(
+        1 for p in propuestas if (p.autopilot or {}).get("recomendado") and p.estado == "pendiente"
     )
     return {
         "version": AUTOPILOT_VERSION,
         "config": config,
-        "total_propuestas": total_propuestas,
-        "aprobadas_por_autopiloto": aprobadas_auto,
+        "total_propuestas": len(propuestas),
+        "recomendadas_pendientes_de_revision": recomendadas_pendientes,
     }

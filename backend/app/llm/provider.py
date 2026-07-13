@@ -25,6 +25,16 @@ class MockLLMProvider(LLMProvider):
     def generate(self, prompt: str) -> str:
         match = re.search(r"<DATOS>(.*?)</DATOS>", prompt, re.DOTALL)
         if not match:
+            # Prompt del chat de ORAI (sin <DATOS>): respuesta genérica y
+            # conversacional — sigue siendo 100% determinística, ningún dato
+            # se inventa, solo cambia el tono según el contexto del prompt.
+            if "ORAI" in prompt:
+                return (
+                    "¡Gracias por escribir! Soy ORAI, el asistente de Odds Ratio. Puedo "
+                    "ayudarte con preguntas generales sobre cómo funciona el servicio. "
+                    "Si tu consulta requiere una recomendación de inversión o algo más "
+                    "específico, con gusto te conecto con un asesor humano."
+                )
             return (
                 "Propuesta generada según los modelos estadísticos vigentes. "
                 "Un asesor humano autorizado revisará esta propuesta antes de "

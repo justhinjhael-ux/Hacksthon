@@ -117,7 +117,17 @@ export interface Proposal {
   estado: string;
   guardrail_activado: boolean;
   alerta_cumplimiento?: { ok: boolean; alertas: any[] };
-  autopilot_aplicado?: boolean;
+  // ## Recomendación del Autopiloto — SOLO informativa, nunca cambia `estado`.
+  // ## El asesor humano siempre debe hacer clic en Aprobar/Editar/Rechazar.
+  autopilot?: AutopilotRecomendacion | null;
+}
+
+export interface AutopilotRecomendacion {
+  recomendado: boolean;
+  motivo: string;
+  umbral: number;
+  confianza: number;
+  version: string;
 }
 
 // ## Normaliza `distribucion` a una lista siempre — si la propuesta fue
@@ -159,6 +169,7 @@ export interface HistoryItem {
     distribucion: AllocationItem[] | DistribucionEditada;
     proyeccion: Proyeccion;
     explicacion: string;
+    autopilot?: AutopilotRecomendacion | null;
     created_at: string | null;
   } | null;
   revision: {
@@ -322,3 +333,6 @@ export const sendChatMessage = (sessionId: string, mensaje: string) =>
     method: "POST",
     body: JSON.stringify({ session_id: sessionId, mensaje }),
   });
+
+export const getChatSugerencias = () =>
+  request<{ mensajes: string[]; horario_atencion: string }>("/chat/sugerencias");
