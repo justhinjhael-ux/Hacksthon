@@ -15,13 +15,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es">
       <body className="min-h-screen flex flex-col">
-        <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-sm border-b border-brand-100">
-          <div className="max-w-6xl mx-auto px-6 py-3.5 flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2.5">
-              {/* ## marca "OR" — placeholder del logo mientras se recupera el asset original */}
-              <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-600 to-brand-400 text-white font-extrabold flex items-center justify-center text-sm">
-                OR
-              </span>
+        <header className="sticky top-0 z-40 bg-white/70 backdrop-blur-xl border-b border-white/60 shadow-[0_1px_0_rgba(91,24,217,0.06)]">
+          <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-mark.png" alt="Odds Ratio" className="h-9 w-auto" />
               <span className="font-extrabold text-brand-900 tracking-tight">Odds Ratio</span>
             </Link>
             <nav className="flex items-center gap-5 text-sm font-semibold text-brand-700">
@@ -34,7 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-8">{children}</main>
 
-        <footer className="border-t border-brand-100 bg-white/60">
+        <footer className="border-t border-white/60 bg-white/50 backdrop-blur-md">
           <div className="max-w-6xl mx-auto px-6 py-4">
             <p className="disclaimer-banner">
               Proyecto demostrativo con datos ficticios y simulaciones ilustrativas. El

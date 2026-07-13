@@ -90,9 +90,11 @@ export default function Home() {
             </Link>
             <Link
               href="/chat"
-              className="bg-white/10 backdrop-blur-sm border border-white/20 font-semibold px-7 py-3 rounded-xl hover:bg-white/20 active:scale-95 transition-all duration-200 ease-ios"
+              className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 font-semibold pl-2.5 pr-6 py-2 rounded-xl hover:bg-white/20 active:scale-95 transition-all duration-200 ease-ios"
             >
-              💬 Hablar con ORAI
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/orai-avatar.png" alt="ORAI" className="w-9 h-9 rounded-full object-cover border border-white/40" />
+              Hablar con ORAI
             </Link>
           </div>
         </div>

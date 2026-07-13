@@ -2,24 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ## Fondo tipo "gadget Apple": manchas de gradiente moradas difusas y fijas,
+## detrás de todo el contenido — evocan el acabado de un keynote de iPhone. */
 body {
-  background: #f7f8fc;
   color: #1f1147;
+  background-color: #f7f8fc;
+  background-image:
+    radial-gradient(600px circle at 8% 0%, rgba(138, 43, 226, 0.14), transparent 60%),
+    radial-gradient(500px circle at 100% 20%, rgba(168, 85, 247, 0.12), transparent 55%),
+    radial-gradient(700px circle at 50% 100%, rgba(91, 24, 217, 0.08), transparent 60%);
+  background-attachment: fixed;
 }
 
 @layer components {
-  /* ## Tarjeta premium reutilizable: glassmorphism sutil + sombra elevada */
+  /* ## Tarjeta premium reutilizable: vidrio esmerilado estilo iOS — fondo
+  ## translúcido, blur fuerte, borde de luz superior sutil, sombra elevada. */
   .card-premium {
-    @apply bg-white/80 backdrop-blur-sm border border-brand-100 rounded-2xl shadow-lift transition-all duration-300;
+    @apply relative bg-white/60 backdrop-blur-xl border border-white/70 rounded-[1.75rem] shadow-lift transition-all duration-300;
+    box-shadow:
+      0 25px 50px -18px rgba(46, 15, 92, 0.28),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
   }
 
-  /* ## Botón primario de marca */
+  /* ## Botón primario de marca — con reflejo sutil como un botón de vidrio */
   .btn-primary {
-    @apply bg-brand-600 text-white font-semibold px-6 py-3 rounded-xl shadow-lift hover:scale-[1.02] active:scale-100 transition-transform duration-200 ease-ios;
+    @apply bg-gradient-to-b from-brand-500 to-brand-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lift hover:scale-[1.02] active:scale-100 transition-transform duration-200 ease-ios;
   }
 
   /* ## Badge de disclaimer regulatorio — siempre visible, nunca letra pequeña */
   .disclaimer-banner {
-    @apply bg-amber-50 border border-amber-300 text-amber-800 text-sm rounded-xl px-4 py-3;
+    @apply bg-amber-50/80 backdrop-blur-sm border border-amber-300/70 text-amber-800 text-sm rounded-xl px-4 py-3;
   }
 }
