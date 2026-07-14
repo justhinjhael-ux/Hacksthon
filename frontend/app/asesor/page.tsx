@@ -9,15 +9,20 @@
 // ## auditoria. sendDecision() se llama exactamente igual que antes.
 // ## ==========================================================================
 import { useEffect, useMemo, useState } from "react";
+import AnalisisEstadistico from "@/components/AnalisisEstadistico";
 import {
   AutopilotConfig,
   ClientRankingRow,
+  CorrelationMatrix,
   HistoryItem,
+  MarkowitzResult,
   PilotConfig,
   QualityReport,
   getAudit,
   getAutopilot,
+  getCorrelacion,
   getHistory,
+  getMarkowitz,
   getPilotMode,
   getQualityReport,
   getRanking,
@@ -66,6 +71,24 @@ export default function AsesorPage() {
   const [seleccionado, setSeleccionado] = useState<HistoryItem | null>(null);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [distEditada, setDistEditada] = useState<Record<string, number>>({});
+
+  // ## Análisis estadístico completo del caso seleccionado (Markowitz + correlación)
+  const [markowitzCaso, setMarkowitzCaso] = useState<MarkowitzResult | null>(null);
+  const [correlacionCaso, setCorrelacionCaso] = useState<CorrelationMatrix | null>(null);
+
+  useEffect(() => {
+    if (!seleccionado) {
+      setMarkowitzCaso(null);
+      setCorrelacionCaso(null);
+      return;
+    }
+    Promise.all([getMarkowitz(seleccionado.perfil.perfil), getCorrelacion()])
+      .then(([mk, corr]) => {
+        setMarkowitzCaso(mk);
+        setCorrelacionCaso(corr);
+      })
+      .catch(() => {});
+  }, [seleccionado?.client_id]);
 
   // ## Historial: búsqueda + filtro de estado
   const [buscHistorial, setBuscHistorial] = useState("");
@@ -370,30 +393,27 @@ export default function AsesorPage() {
                 </div>
               </div>
 
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="card-premium p-5">
-                  <p className="text-xs font-extrabold text-brand-700 uppercase tracking-wide mb-2">🎯 Objetivo</p>
-                  <p className="text-sm text-slate-600">{objetivo ? objetivo.respuesta : "No especificado en el cuestionario."}</p>
-                </div>
-                <div className="card-premium p-5">
-                  <p className="text-xs font-extrabold text-brand-700 uppercase tracking-wide mb-2">📈 Portafolio propuesto</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {distribucion.map((d) => (
-                      <span key={d.clase} className="text-[11px] font-semibold px-2.5 py-1 rounded-pill bg-brand-100 text-brand-700">
-                        {d.nombre}: {d.porcentaje}%
-                      </span>
-                    ))}
-                    {distribucion.length === 0 && <span className="text-xs text-slate-400">Sin propuesta generada.</span>}
-                  </div>
-                </div>
+              <div className="card-premium p-5">
+                <p className="text-xs font-extrabold text-brand-700 uppercase tracking-wide mb-2">🎯 Objetivo</p>
+                <p className="text-sm text-slate-600">{objetivo ? objetivo.respuesta : "No especificado en el cuestionario."}</p>
               </div>
 
-              <div className="card-premium p-5">
-                <p className="text-xs font-extrabold text-brand-700 uppercase tracking-wide mb-2">✨ Justificación IA</p>
-                <p className="text-sm text-slate-600 leading-relaxed">
-                  {h.propuesta?.explicacion || "Sin explicación disponible."}
-                </p>
-              </div>
+              {/* ## Análisis estadístico COMPLETO del caso — mismo panel que ve el
+              ## cliente (barras, mapa de calor, velas, ojiva, Markowitz) + el
+              ## detalle de las 10 respuestas, para una decisión más rigurosa. */}
+              {h.propuesta && (
+                <AnalisisEstadistico
+                  perfil={h.perfil.perfil}
+                  score={h.perfil.score}
+                  influencias={h.perfil.influencias}
+                  distribucion={distribucion}
+                  proyeccion={h.propuesta.proyeccion}
+                  markowitz={markowitzCaso}
+                  correlacion={correlacionCaso}
+                  explicacion={h.propuesta.explicacion}
+                  panelCompleto
+                />
+              )}
 
               {/* ## Recomendación del Autopiloto — solo informativa */}
               {h.propuesta?.autopilot && h.revision.estado === "pendiente" && (
