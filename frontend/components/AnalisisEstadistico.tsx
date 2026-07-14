@@ -184,6 +184,42 @@ export default function AnalisisEstadistico({
         </div>
       )}
 
+      {/* ## Cuenta de inversión — resumen tipo banca virtual. Todo derivado de
+      ## cifras que el backend ya entrega (monto_inicial, % por clase, retorno
+      ## mensual esperado); ningún número nuevo se calcula aquí. */}
+      <div className="relative overflow-hidden rounded-[1.75rem] p-6 text-white shadow-deep bg-gradient-to-br from-brand-950 via-brand-800 to-brand-600">
+        <div className="pointer-events-none absolute -top-14 -right-10 h-48 w-48 rounded-full bg-white/8 blur-2xl" />
+        <div className="relative flex items-center justify-between">
+          <div>
+            <p className="text-[11px] uppercase tracking-widest text-white/60">Cuenta de inversión · ODS Ratio</p>
+            <p className="text-3xl font-extrabold mt-1">${fmt(proyeccion.monto_inicial)}</p>
+            <p className="text-xs text-white/70 mt-1">Monto a invertir según tu propuesta</p>
+          </div>
+          <span className="h-11 w-11 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-xl shrink-0">
+            🏦
+          </span>
+        </div>
+        <div className="relative grid grid-cols-2 gap-3 mt-5 pt-4 border-t border-white/15">
+          <div>
+            <p className="text-[10px] uppercase tracking-widest text-white/60">Crecimiento mensual esperado</p>
+            <p className="text-lg font-bold mt-0.5">
+              +${fmt(proyeccion.monto_inicial * proyeccion.retorno_mensual_esperado)}
+              <span className="text-xs text-white/60 ml-1">({(proyeccion.retorno_mensual_esperado * 100).toFixed(2)}%)</span>
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-widest text-white/60">Horizonte de la cuenta</p>
+            <p className="text-lg font-bold mt-0.5">{proyeccion.horizonte_meses} meses</p>
+          </div>
+        </div>
+        {/* ## Mini barras de composición — mismo dato que el gráfico de abajo, en formato "extracto de cuenta" */}
+        <div className="relative mt-4 flex h-2.5 w-full rounded-pill overflow-hidden bg-white/10">
+          {distribucion.map((d, i) => (
+            <div key={d.clase} style={{ width: `${d.porcentaje}%`, background: COLORES[i % COLORES.length] }} title={`${d.nombre}: ${d.porcentaje}%`} />
+          ))}
+        </div>
+      </div>
+
       {/* ## Fila de estadísticas clave */}
       <div className="grid grid-cols-3 gap-3">
         <div className="card-premium p-4 text-center">
@@ -228,6 +264,52 @@ export default function AnalisisEstadistico({
             </Bar>
           </BarChart>
         </ResponsiveContainer>
+      </div>
+
+      {/* ## Detalle de inversión por instrumento — desglose más fino que "% por
+      ## clase": monto y % de cada instrumento dentro de su clase. El backend
+      ## no entrega un peso individual por instrumento, así que se distribuye
+      ## el % de la clase en partes iguales entre sus instrumentos — y esto se
+      ## declara explícitamente para no aparentar una precisión que no existe. */}
+      <div className="card-premium p-6">
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="font-bold text-brand-900">Detalle de inversión por instrumento</h2>
+          <span className="text-xs font-semibold text-slate-400">monto estimado en $</span>
+        </div>
+        <p className="text-xs text-slate-400 mb-4">
+          Cada clase de activo se reparte en partes iguales entre sus instrumentos — una distribución
+          equitativa sugerida que el asesor puede ajustar en la edición de la propuesta.
+        </p>
+        <div className="space-y-4">
+          {distribucion.map((clase, i) => {
+            const nInstrumentos = clase.instrumentos.length || 1;
+            const pctPorInstrumento = clase.porcentaje / nInstrumentos;
+            const montoPorInstrumento = (proyeccion.monto_inicial * clase.porcentaje) / 100 / nInstrumentos;
+            return (
+              <div key={clase.clase}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="h-2 w-2 rounded-full shrink-0" style={{ background: COLORES[i % COLORES.length] }} />
+                  <p className="text-xs font-bold text-brand-800">{clase.nombre}</p>
+                  <span className="text-[10px] text-slate-400">· {clase.porcentaje}% del total</span>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-2">
+                  {clase.instrumentos.map((inst) => (
+                    <div key={inst.ticker} className="flex items-center justify-between gap-2 bg-brand-50/60 border border-brand-100 rounded-xl px-3 py-2.5">
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-brand-900 font-mono">{inst.ticker}</p>
+                        <p className="text-[11px] text-slate-500 truncate">{inst.nombre}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-xs font-extrabold text-brand-900">${fmt(montoPorInstrumento)}</p>
+                        <p className="text-[10px] text-slate-400">{pctPorInstrumento.toFixed(1)}%</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* ## Mapa de calor — correlación empírica real entre clases riesgosas */}
